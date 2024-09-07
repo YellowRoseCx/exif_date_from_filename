@@ -38,6 +38,11 @@ def parse_date_from_filename(filename: Path):
 
 
 def update_exif_date(image_path: Path, dry_run: bool = False):
+    # Parse date from filename (assumed to be faster than actually opening the image)
+    date_taken = parse_date_from_filename(image_path)
+    if not date_taken:
+        _LOGGER.debug(f"Could not parse date from filename: {image_path}")
+        return
     # Open the image
     try:
         img = Image.open(image_path)
@@ -58,20 +63,15 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
 
         # Check if DateTimeOriginal tag is already set
         if piexif.ExifIFD.DateTimeOriginal not in exif_dict['Exif']:
-            # Parse date from filename
-            date_taken = parse_date_from_filename(image_path)
 
-            if date_taken:
-                # Set the DateTimeOriginal tag
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_taken.encode('utf-8')
+            # Set the DateTimeOriginal tag
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_taken.encode('utf-8')
 
-                # Save the updated EXIF data
-                exif_bytes = piexif.dump(exif_dict)
-                if not dry_run:
-                    img.save(image_path, exif=exif_bytes)
-                _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
-            else:
-                _LOGGER.debug(f"Could not parse date from filename: {image_path}")
+            # Save the updated EXIF data
+            exif_bytes = piexif.dump(exif_dict)
+            if not dry_run:
+                img.save(image_path, exif=exif_bytes)
+            _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
         else:
             _LOGGER.debug(f"EXIF date already set for {image_path}")
 
@@ -86,6 +86,7 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
     :param verbosity: Logging verbosity level
     :param wet_run: Perform the actual update (default is dry run)
     """
+    # cursed logging setup
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -93,6 +94,7 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
     _LOGGER.setLevel(verbosity)
     _LOGGER.addHandler(handler)
 
+    # actual processing
     for dir_path, dir_names, file_names in tqdm(Path(directory).walk()):
         _LOGGER.info(f"Processing directory: {dir_path}")
         for filename in file_names:
