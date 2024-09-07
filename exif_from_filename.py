@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 from PIL import Image
@@ -12,14 +13,29 @@ _LOGGER = logging.getLogger(__name__)
 def parse_date_iOS_filename(filename: Path):
     _LOGGER.debug(f"Trying iOS filename parser")
     # Extract date and time from filename on iPhone (old)
+    # example: 2015-06-08 07.00.11.jpg
     # Check that file ends with .jpg or .jpeg
-    if filename.suffix.lower() not in ['.jpg', '.jpeg']:
-        return None
     date_str = filename.stem
     try:
         # Parse the date string
         date_obj = datetime.strptime(date_str, '%Y-%m-%d %H.%M.%S')
-        return date_obj.strftime("%Y:%m:%d %H:%M:%S")
+        return date_obj
+    except ValueError:
+        return None
+
+WA_OLD_REGEX = re.compile(r"IMG-\d{8}-WA\d{4}\..*")
+
+def parse_date_WA_old_filename(filename: Path):
+    _LOGGER.debug(f"Trying WhatsApp filename parser (old)")
+    # Extract date and time from filename transferred from WhatsApp (old)
+    # example: IMG-20151101-WA0001.jpg
+    date_str = filename.name
+    if not WA_OLD_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[4:12], '%Y%m%d')
+        return date_obj
     except ValueError:
         return None
 
@@ -27,6 +43,7 @@ def parse_date_iOS_filename(filename: Path):
 
 FILENAME_PARSERS = [
     parse_date_iOS_filename,
+    parse_date_WA_old_filename,
 ]
 
 def parse_date_from_filename(filename: Path):
@@ -68,7 +85,8 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
         if piexif.ExifIFD.DateTimeOriginal not in exif_dict['Exif']:
 
             # Set the DateTimeOriginal tag
-            exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_taken.encode('utf-8')
+            date_taken_fmt = date_taken.strftime('%Y:%m:%d %H:%M:%S')
+            exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_taken_fmt.encode('utf-8')
 
             # Save the updated EXIF data
             exif_bytes = piexif.dump(exif_dict)
@@ -90,7 +108,7 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
     """
     # cursed logging setup
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     handler.setLevel(verbosity)
     _LOGGER.setLevel(verbosity)
@@ -103,7 +121,9 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
         iter = tqdm(iter)
     for dir_path, dir_names, file_names in iter:
         _LOGGER.info(f"Processing directory: {dir_path}")
-        for filename in file_names:
+        for filename in sorted(file_names):
+            if Path(filename).suffix.lower() not in ['.jpg', '.jpeg', '.tif', '.webp', '.tiff', '.png']:
+                continue
             _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
             update_exif_date(image_path, not wet_run)
