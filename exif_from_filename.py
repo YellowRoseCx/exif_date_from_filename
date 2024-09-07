@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from PIL import Image
@@ -55,11 +56,28 @@ def parse_date_Threema_filename(filename: Path):
     except ValueError:
         return None
 
+SIGNAL_REGEX = re.compile(r"signal-\d{4}-\d{2}-\d{2}-\d{6}\..*")
+
+def parse_date_Signal_filename(filename: Path):
+    _LOGGER.debug(f"Trying Signal filename parser")
+    # Extract date and time from filename transferred from Signal
+    # example: signal-2021-06-13-203304.jpg
+    date_str = filename.name
+    if not SIGNAL_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[7:22], '%Y-%m-%d-%H%M%S')
+        return date_obj
+    except ValueError:
+        return None
+
 
 FILENAME_PARSERS = [
     parse_date_iOS_filename,
     parse_date_WA_filename,
     parse_date_Threema_filename,
+    parse_date_Signal_filename,
 ]
 
 def parse_date_from_filename(filename: Path):
@@ -104,9 +122,11 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
             date_taken_fmt = date_taken.strftime('%Y:%m:%d %H:%M:%S')
             exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_taken_fmt.encode('utf-8')
 
-            # Save the updated EXIF data
+            # Save the updated EXIF data (atomic, to avoid corrupting the image)
             exif_bytes = piexif.dump(exif_dict)
-            img.save(image_path, exif=exif_bytes)
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                img.save(tmp.name, exif=exif_bytes)
+                os.replace(tmp.name, image_path)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
         else:
             _LOGGER.debug(f"EXIF date already set for {image_path}")
