@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def parse_date_iOS_filename(filename: Path):
     _LOGGER.debug(f"Trying iOS filename parser")
-    # Extract date and time from filename on iPhone (old)
+    # Extract date and time from filename on iPhone
     # example: 2015-06-08 07.00.11.jpg
     # Check that file ends with .jpg or .jpeg
     date_str = filename.stem
@@ -23,14 +23,14 @@ def parse_date_iOS_filename(filename: Path):
     except ValueError:
         return None
 
-WA_OLD_REGEX = re.compile(r"IMG-\d{8}-WA\d{4}\..*")
+WA_REGEX = re.compile(r"IMG-\d{8}-WA\d{4}\..*")
 
-def parse_date_WA_old_filename(filename: Path):
-    _LOGGER.debug(f"Trying WhatsApp filename parser (old)")
-    # Extract date and time from filename transferred from WhatsApp (old)
+def parse_date_WA_filename(filename: Path):
+    _LOGGER.debug(f"Trying WhatsApp filename parser")
+    # Extract date and time from filename transferred from WhatsApp
     # example: IMG-20151101-WA0001.jpg
     date_str = filename.name
-    if not WA_OLD_REGEX.match(date_str):
+    if not WA_REGEX.match(date_str):
         return None
     try:
         # Parse the date string
@@ -39,11 +39,27 @@ def parse_date_WA_old_filename(filename: Path):
     except ValueError:
         return None
 
+THREEMA_REGEX = re.compile(r"threema-\d{8}-\d{9}\..*")
+
+def parse_date_Threema_filename(filename: Path):
+    _LOGGER.debug(f"Trying Threema filename parser")
+    # Extract date and time from filename transferred from Threema
+    # example: threema-20220412-084636799.jpg
+    date_str = filename.name
+    if not THREEMA_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[8:23], '%Y%m%d-%H%M%S')
+        return date_obj
+    except ValueError:
+        return None
 
 
 FILENAME_PARSERS = [
     parse_date_iOS_filename,
-    parse_date_WA_old_filename,
+    parse_date_WA_filename,
+    parse_date_Threema_filename,
 ]
 
 def parse_date_from_filename(filename: Path):
