@@ -39,9 +39,17 @@ def parse_date_from_filename(filename: Path):
 
 
 def update_exif_date(image_path: Path, dry_run: bool = False):
+    # Open the image
     try:
-        # Open the image
         img = Image.open(image_path)
+    except Exception as e:
+        _LOGGER.debug(f"Error opening {image_path}: {str(e)}")
+        if "cannot identify image file" in str(e):
+            _LOGGER.debug(f"Skipping non-image file: {image_path}")
+        else:
+            _LOGGER.warning(f"Error opening {image_path}: {str(e)}")
+        return
+    try:
 
         # Check if EXIF data exists
         if 'exif' in img.info:
