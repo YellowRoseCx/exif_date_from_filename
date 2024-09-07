@@ -38,7 +38,7 @@ def parse_date_from_filename(filename: Path):
     return None
 
 
-def update_exif_date(image_path: Path):
+def update_exif_date(image_path: Path, dry_run: bool = False):
     try:
         # Open the image
         img = Image.open(image_path)
@@ -60,8 +60,9 @@ def update_exif_date(image_path: Path):
 
                 # Save the updated EXIF data
                 exif_bytes = piexif.dump(exif_dict)
-                img.save(image_path, exif=exif_bytes)
-                _LOGGER.info(f"Updated EXIF date for {image_path}")
+                if not dry_run:
+                    img.save(image_path, exif=exif_bytes)
+                _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
             else:
                 _LOGGER.debug(f"Could not parse date from filename: {image_path}")
         else:
@@ -71,9 +72,12 @@ def update_exif_date(image_path: Path):
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}")
 
 
-def process_directory(directory: str, verbosity: int = logging.INFO):
+def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bool = False):
     """
     Process all images in the given directory and update their EXIF date based on filename, if missing
+    :param directory: Directory containing images
+    :param verbosity: Logging verbosity level
+    :param wet_run: Perform the actual update (default is dry run)
     """
     _LOGGER.setLevel(verbosity)
 
@@ -82,7 +86,7 @@ def process_directory(directory: str, verbosity: int = logging.INFO):
         for filename in file_names:
             _LOGGER.info(f"Processing file: {filename}")
             image_path = dir_path / filename
-            update_exif_date(image_path)
+            update_exif_date(image_path, not wet_run)
 
 
 # Usage
