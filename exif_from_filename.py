@@ -43,6 +43,9 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
     if not date_taken:
         _LOGGER.debug(f"Could not parse date from filename: {image_path}")
         return
+    if dry_run:
+        _LOGGER.info(f"Would update EXIF date for {image_path} to {date_taken}")
+        return
     # Open the image
     try:
         img = Image.open(image_path)
@@ -69,8 +72,7 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
 
             # Save the updated EXIF data
             exif_bytes = piexif.dump(exif_dict)
-            if not dry_run:
-                img.save(image_path, exif=exif_bytes)
+            img.save(image_path, exif=exif_bytes)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
         else:
             _LOGGER.debug(f"EXIF date already set for {image_path}")
