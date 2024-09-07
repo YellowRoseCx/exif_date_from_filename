@@ -8,7 +8,6 @@ import fire
 from tqdm import tqdm
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.WARNING)
 
 def parse_date_iOS_filename(filename: Path):
     _LOGGER.debug(f"Trying iOS filename parser")
@@ -87,12 +86,17 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
     :param verbosity: Logging verbosity level
     :param wet_run: Perform the actual update (default is dry run)
     """
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    handler.setLevel(verbosity)
     _LOGGER.setLevel(verbosity)
+    _LOGGER.addHandler(handler)
 
     for dir_path, dir_names, file_names in tqdm(Path(directory).walk()):
         _LOGGER.info(f"Processing directory: {dir_path}")
         for filename in file_names:
-            _LOGGER.info(f"Processing file: {filename}")
+            _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
             update_exif_date(image_path, not wet_run)
 
