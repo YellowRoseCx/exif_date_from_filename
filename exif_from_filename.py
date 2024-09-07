@@ -97,7 +97,11 @@ def process_directory(directory: str, verbosity: int = logging.INFO, wet_run: bo
     _LOGGER.addHandler(handler)
 
     # actual processing
-    for dir_path, dir_names, file_names in tqdm(Path(directory).walk()):
+    iter = Path(directory).walk()
+    if verbosity > logging.INFO:
+        # should add a progress bar if verbosity is high
+        iter = tqdm(iter)
+    for dir_path, dir_names, file_names in iter:
         _LOGGER.info(f"Processing directory: {dir_path}")
         for filename in file_names:
             _LOGGER.debug(f"Processing file: {filename}")
