@@ -1,0 +1,4 @@
+piexif
+pillow
+fire
+tqdm
