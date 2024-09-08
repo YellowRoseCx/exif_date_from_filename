@@ -72,7 +72,7 @@ def parse_date_Signal_filename(filename: Path):
     except ValueError:
         return None
 
-unk_image_REGEX = re.compile(r"image_\d{8}_\d{6}.*")
+unk_image_REGEX = re.compile(r"image-\d{8}-\d{6}..*")
 
 def parse_date_unk_image_filename(filename: Path):
     _LOGGER.debug(f"Trying Unknown Image filename parser")
@@ -80,6 +80,22 @@ def parse_date_unk_image_filename(filename: Path):
     # example: image-20230409-103235.jpg
     date_str = filename.name
     if not unk_image_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[6:21], '%Y%m%d-%H%M%S')
+        return date_obj
+    except ValueError:
+        return None
+
+IG_REGEX = re.compile(r"IMG_\d{8}_\d{6}_\d{3}\..*")
+
+def parse_date_IG_filename(filename: Path):
+    _LOGGER.debug(f"Trying Instagram filename parser")
+    # Extract date and time from filename transferred from Instagram
+    # example: IMG_20220901_041339_391.jpg
+    date_str = filename.name
+    if not IG_REGEX.match(date_str):
         return None
     try:
         # Parse the date string
@@ -94,6 +110,7 @@ FILENAME_PARSERS = [
     parse_date_Threema_filename,
     parse_date_Signal_filename,
     parse_date_unk_image_filename,
+    parse_date_IG_filename,
 ]
 
 def parse_date_from_filename(filename: Path):
