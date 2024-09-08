@@ -26,7 +26,7 @@ def parse_date_iOS_filename(filename: Path):
         return None
 
 
-WA_REGEX = re.compile(r"IMG-\d{8}-WA\d{4}\..*")
+WA_REGEX = re.compile(r"IMG[-_]\d{8}-WA\d{4}\..*")
 
 
 def parse_date_WA_filename(filename: Path):
