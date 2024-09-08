@@ -26,7 +26,7 @@ def parse_date_iOS_filename(filename: Path):
         return None
 
 
-WA_REGEX = re.compile(r"IMG[-_]\d{8}-WA\d{4}\..*")
+WA_REGEX = re.compile(r"IMG[-_](\d{8})-WA(\d{4})\..*")
 
 
 def parse_date_WA_filename(filename: Path):
@@ -34,11 +34,14 @@ def parse_date_WA_filename(filename: Path):
     # Extract date and time from filename transferred from WhatsApp
     # example: IMG-20151101-WA0001.jpg
     date_str = filename.name
-    if not WA_REGEX.match(date_str):
+    match = WA_REGEX.match(date_str)
+    if not match:
         return None
+    # extract capture date and time
+    date_str = match.group(1) + "_" + match.group(2)
     try:
         # Parse the date string
-        date_obj = datetime.strptime(date_str[4:12], "%Y%m%d")
+        date_obj = datetime.strptime(date_str, "%Y%m%d_%M%S")
         return date_obj
     except ValueError:
         return None
@@ -134,7 +137,7 @@ def parse_date_from_filename(filename: Path):
     return None
 
 
-def update_exif_date(image_path: Path, dry_run: bool = False):
+def update_exif_date(image_path: Path, dry_run: bool = False, force: bool = False):
     # Parse date from filename (assumed to be faster than actually opening the image)
     date_taken = parse_date_from_filename(image_path)
     if not date_taken:
@@ -162,7 +165,7 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
             exif_dict = {"0th": {}, "1st": {}, "Exif": {}, "GPS": {}, "Interop": {}}
 
         # Check if DateTimeOriginal tag is already set
-        if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"]:
+        if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"] or force:
 
             # Set the DateTimeOriginal tag
             date_taken_fmt = date_taken.strftime("%Y:%m:%d %H:%M:%S")
@@ -186,13 +189,14 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
 
 
 def process_directory(
-    directory: str, verbosity: int = logging.INFO, wet_run: bool = False
+    directory: str, verbosity: int = logging.INFO, wet_run: bool = False, force: bool = False
 ):
     """
     Process all images in the given directory and update their EXIF date based on filename, if missing
     :param directory: Directory containing images
     :param verbosity: Logging verbosity level
     :param wet_run: Perform the actual update (default is dry run)
+    :param force: Force update even if DateTimeOriginal tag is already set
     """
     # cursed logging setup
     handler = logging.StreamHandler()
