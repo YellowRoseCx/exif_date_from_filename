@@ -8,6 +8,8 @@ The script boasts some hardcoded formats for the file name. If your file names d
 
 The default run is a dry run. To actually update the EXIF date, you need to pass the `--wet_run True` flag.
 
+Changes are applied atomically. If you cancel the script, no image will be broken. You may be left with an artifact temporary image.
+
 ## Installation
 
 ```bash
