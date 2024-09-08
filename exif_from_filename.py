@@ -157,7 +157,7 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
 
             # Save the updated EXIF data (atomic, to avoid corrupting the image)
             exif_bytes = piexif.dump(exif_dict)
-            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=image_path.suffix) as tmp:
                 img.save(tmp.name, exif=exif_bytes)
                 os.replace(tmp.name, image_path)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
