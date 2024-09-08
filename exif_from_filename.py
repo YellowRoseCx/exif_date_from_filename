@@ -222,6 +222,7 @@ def process_directory(
             _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
             update_exif_date(image_path, not wet_run)
+    _LOGGER.info("Done!")
 
 
 # Usage
