@@ -7,6 +7,7 @@ from datetime import datetime
 from PIL import Image
 import piexif
 import fire
+from menuinst.platforms.win_utils.knownfolders import folder_path
 from tqdm import tqdm
 
 _LOGGER = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ def update_exif_date(image_path: Path, dry_run: bool = False):
 
             # Save the updated EXIF data (atomic, to avoid corrupting the image)
             exif_bytes = piexif.dump(exif_dict)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=image_path.suffix) as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=image_path.suffix, dir=image_path.parent) as tmp:
                 img.save(tmp.name, exif=exif_bytes)
                 os.replace(tmp.name, image_path)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
