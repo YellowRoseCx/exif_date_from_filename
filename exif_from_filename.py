@@ -118,6 +118,22 @@ def parse_date_IG_filename(filename: Path):
     except ValueError:
         return None
 
+VR_REGEX = re.compile(r"IMG_\d{8}_\d{6}\.vr\..*")
+
+
+def parse_date_vr_image_filename(filename: Path):
+    _LOGGER.debug(f"Trying VR Image creator filename parser")
+    # Extract date and time from filename transferred from VR Image creator
+    # example: IMG_20191209_043621.vr.jpg
+    date_str = filename.name
+    if not VR_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[4:19], "%Y%m%d_%H%M%S")
+        return date_obj
+    except ValueError:
+        return None
 
 FILENAME_PARSERS = [
     parse_date_iOS_filename,
@@ -126,6 +142,7 @@ FILENAME_PARSERS = [
     parse_date_Signal_filename,
     parse_date_unk_image_filename,
     parse_date_IG_filename,
+    parse_date_vr_image_filename,
 ]
 
 
