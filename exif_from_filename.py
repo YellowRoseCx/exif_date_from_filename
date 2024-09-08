@@ -72,12 +72,28 @@ def parse_date_Signal_filename(filename: Path):
     except ValueError:
         return None
 
+unk_image_REGEX = re.compile(r"image_\d{8}_\d{6}.*")
+
+def parse_date_unk_image_filename(filename: Path):
+    _LOGGER.debug(f"Trying Unknown Image filename parser")
+    # Extract date and time from filename transferred from ???
+    # example: image-20230409-103235.jpg
+    date_str = filename.name
+    if not unk_image_REGEX.match(date_str):
+        return None
+    try:
+        # Parse the date string
+        date_obj = datetime.strptime(date_str[4:19], '%Y%m%d_%H%M%S')
+        return date_obj
+    except ValueError:
+        return None
 
 FILENAME_PARSERS = [
     parse_date_iOS_filename,
     parse_date_WA_filename,
     parse_date_Threema_filename,
     parse_date_Signal_filename,
+    parse_date_unk_image_filename,
 ]
 
 def parse_date_from_filename(filename: Path):
