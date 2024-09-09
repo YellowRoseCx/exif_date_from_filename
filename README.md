@@ -32,6 +32,22 @@ If you're happy with the changes, run the script with the `--wet_run True` flag:
 python exif_from_filename.py /path/to/photos --wet_run True
 ```
 
+## Customization
+
+The script comes with a default configuration file. If you want to add your own file name formats, you can do so by modifying the `config.yml` file.
+
+```yaml
+# filename_regex parsers are used to extract the date and time from the filename
+- parser: filename_regex
+  name: Custom IMG parser
+  # example: IMG_20191209_043621
+  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.*
+# folder parsers are used to extract the date from any folder name in the path - use carefully as it updates contents in _all_ subfolders
+- parser: folder
+  folder_name: "Holiday0601"
+  date: 2021-06-01
+``` 
+
 ## Re-indexing (Nextcloud)
 
 When using Nextcloud / Memories, you may want to re-index the photos after updating the EXIF date. This can be done by running the following command:

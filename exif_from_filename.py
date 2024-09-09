@@ -64,7 +64,7 @@ class FolderNameParser(Parser):
 
     @staticmethod
     def from_config(config: dict):
-        return FolderNameParser(config["folder_name"], datetime.strptime(config["date"], "%Y-%m-%d"))
+        return FolderNameParser(config["folder_name"], config["date"])
 
     def parse_date(self, filename: Path):
         _LOGGER.debug(f"Trying {self.folder_name} folder name parser")
