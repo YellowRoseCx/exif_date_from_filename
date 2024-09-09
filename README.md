@@ -31,3 +31,11 @@ If you're happy with the changes, run the script with the `--wet_run True` flag:
 ```bash
 python exif_from_filename.py /path/to/photos --wet_run True
 ```
+
+## Re-indexing (Nextcloud)
+
+When using Nextcloud / Memories, you may want to re-index the photos after updating the EXIF date. This can be done by running the following command:
+
+```bash
+php occ memories:index --force --folder /path/to/photos
+```
