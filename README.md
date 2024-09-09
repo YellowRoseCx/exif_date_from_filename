@@ -39,3 +39,5 @@ When using Nextcloud / Memories, you may want to re-index the photos after updat
 ```bash
 php occ memories:index --force --folder /path/to/photos
 ```
+
+Because this command can take longer, exif_from_filename will print the folders that contain actual changes at the end of the run.

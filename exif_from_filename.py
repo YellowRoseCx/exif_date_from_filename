@@ -80,15 +80,15 @@ def parse_date_from_filename(parsers: List[Parser], filename: Path):
     return None
 
 
-def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = False, force: bool = False):
+def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = False, force: bool = False) -> bool:
     # Parse date from filename (assumed to be faster than actually opening the image)
     date_taken = parse_date_from_filename(parsers, image_path)
     if not date_taken:
         _LOGGER.debug(f"Could not parse date from filename: {image_path}")
-        return
+        return False
     if dry_run:
         _LOGGER.info(f"Would update EXIF date for {image_path} to {date_taken}")
-        return
+        return False
     # Open the image
     try:
         img = Image.open(image_path)
@@ -98,7 +98,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             _LOGGER.debug(f"Skipping non-image file: {image_path}")
         else:
             _LOGGER.warning(f"Error opening {image_path}: {str(e)}")
-        return
+        return False
     try:
 
         # Check if EXIF data exists
@@ -124,11 +124,13 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
                 img.save(tmp.name, exif=exif_bytes)
                 os.replace(tmp.name, image_path)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
+            return True
         else:
             _LOGGER.debug(f"EXIF date already set for {image_path}")
 
     except Exception as e:
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}")
+    return False
 
 PARSER_CLASSES = {
     "filename_regex": RegexNameParser,
@@ -170,6 +172,7 @@ def process_directory(
     if verbosity > logging.INFO:
         # should add a progress bar if verbosity is high
         iter = tqdm(iter)
+    updated_dirs = set()
     for dir_path, dir_names, file_names in iter:
         _LOGGER.info(f"Processing directory: {dir_path}")
         for filename in sorted(file_names):
@@ -184,8 +187,14 @@ def process_directory(
                 continue
             _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
-            update_exif_date(parsers, image_path, not wet_run, force)
+            updated = update_exif_date(parsers, image_path, not wet_run, force)
+            if updated:
+                updated_dirs.add(dir_path)
     _LOGGER.info("Done!")
+    if updated_dirs:
+        _LOGGER.info("Dumping updated directories to stdout")
+        for dir in updated_dirs:
+            print(dir)
 
 
 # Usage
