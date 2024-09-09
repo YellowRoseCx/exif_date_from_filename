@@ -2,3 +2,4 @@ piexif
 pillow
 fire
 tqdm
+pyyaml
