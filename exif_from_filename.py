@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime
 from typing import List
@@ -9,8 +10,6 @@ from typing import List
 from PIL import Image
 import piexif
 import fire
-from attr import dataclass
-from jupyter_client.jsonutil import parse_date
 from tqdm import tqdm
 import yaml
 
