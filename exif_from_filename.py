@@ -65,7 +65,7 @@ def parse_date_Threema_filename(filename: Path):
         return None
 
 
-SIGNAL_REGEX = re.compile(r"signal-\d{4}-\d{2}-\d{2}-\d{6}\..*")
+SIGNAL_REGEX = re.compile(r"signal-\d{4}-\d{2}-\d{2}-\d{6}.*")
 
 
 def parse_date_Signal_filename(filename: Path):
