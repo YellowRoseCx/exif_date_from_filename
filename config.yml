@@ -33,4 +33,4 @@
 - parser: filename_regex
   name: Screenshot Android
   # example: Screenshot_20220926-211023.png
-  regex: Screenshot_(\w*_)(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
+  regex: Screenshot_(\w*_)?(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
