@@ -1,0 +1,24 @@
+- parser: filename_regex
+  name: iOS
+  regex: (?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<hour>\d{2})\.(?P<minute>\d{2})\.(?P<second>\d{2})
+- parser: filename_regex
+  name: WhatsApp
+  regex: IMG[-_](?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})[-_]WA(?P<minute>\d{2})(?P<second>\d{2})
+- parser: filename_regex
+  name: Threema
+  regex: threema-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
+- parser: filename_regex
+  name: Signal
+  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
+- parser: filename_regex
+  name: Signal (alt)
+  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2}).*
+- parser: filename_regex
+  name: unk
+  regex: image-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})
+- parser: filename_regex
+  name: Instagram
+  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})_\d{3}
+- parser: filename_regex
+  name: VR Image creator
+  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.vr.*

@@ -4,159 +4,86 @@ import re
 import tempfile
 from pathlib import Path
 from datetime import datetime
+from typing import List
+
 from PIL import Image
 import piexif
 import fire
+from attr import dataclass
+from jupyter_client.jsonutil import parse_date
 from tqdm import tqdm
+import yaml
 
 _LOGGER = logging.getLogger(__name__)
 
+class Parser:
+    def parse_date(self, filename: Path):
+        raise NotImplementedError()
 
-def parse_date_iOS_filename(filename: Path):
-    _LOGGER.debug(f"Trying iOS filename parser")
-    # Extract date and time from filename on iPhone
-    # example: 2015-06-08 07.00.11.jpg
-    # Check that file ends with .jpg or .jpeg
-    date_str = filename.stem
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d %H.%M.%S")
-        return date_obj
-    except ValueError:
-        return None
+@dataclass
+class RegexNameParser(Parser):
+    """
+    A class to parse date from filename using regex pattern
+    The regex pattern should have named groups for year, month, day, hour, minute, second (last 3 are optional)
+    """
+    name: str
+    regex: re.Pattern
 
+    @staticmethod
+    def from_config(config: dict):
+        return RegexNameParser(config["name"], re.compile(config["regex"]))
 
-WA_REGEX = re.compile(r"IMG[-_](\d{8})[-_]WA(\d{4})\..*")
-
-
-def parse_date_WA_filename(filename: Path):
-    _LOGGER.debug(f"Trying WhatsApp filename parser")
-    # Extract date and time from filename transferred from WhatsApp
-    # example: IMG-20151101-WA0001.jpg
-    date_str = filename.name
-    match = WA_REGEX.match(date_str)
-    if not match:
-        return None
-    # extract capture date and time
-    date_str = match.group(1) + "_" + match.group(2)
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str, "%Y%m%d_%M%S")
-        return date_obj
-    except ValueError:
-        return None
-
-
-THREEMA_REGEX = re.compile(r"threema-\d{8}-\d{9}\..*")
-
-
-def parse_date_Threema_filename(filename: Path):
-    _LOGGER.debug(f"Trying Threema filename parser")
-    # Extract date and time from filename transferred from Threema
-    # example: threema-20220412-084636799.jpg
-    date_str = filename.name
-    if not THREEMA_REGEX.match(date_str):
-        return None
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str[8:23], "%Y%m%d-%H%M%S")
-        return date_obj
-    except ValueError:
-        return None
+    def parse_date(self, filename: Path):
+        _LOGGER.debug(f"Trying {self.name} filename parser")
+        date_str = filename.stem
+        match = self.regex.match(date_str)
+        if not match:
+            return None
+        groupdict = match.groupdict()
+        try:
+            # Parse the date string
+            date_obj = datetime(
+                int(groupdict["year"]),
+                int(groupdict["month"]),
+                int(groupdict["day"]),
+                int(groupdict.get("hour", 0)),
+                int(groupdict.get("minute", 0)),
+                int(groupdict.get("second", 0)),
+            )
+            return date_obj
+        except ValueError:
+            return None
 
 
-SIGNAL_REGEX = re.compile(r"signal-\d{4}-\d{2}-\d{2}-\d{6}.*")
+@dataclass
+class FolderNameParser(Parser):
+    """
+    A class to assign a fixed date to all images in a folder
+    """
+    folder_name: str
+    date: datetime
+
+    @staticmethod
+    def from_config(config: dict):
+        return FolderNameParser(config["folder_name"], datetime.strptime(config["date"], "%Y-%m-%d"))
+
+    def parse_date(self, filename: Path):
+        _LOGGER.debug(f"Trying {self.folder_name} folder name parser")
+        if self.folder_name in filename.parts:
+            return self.date
 
 
-def parse_date_Signal_filename(filename: Path):
-    _LOGGER.debug(f"Trying Signal filename parser")
-    # Extract date and time from filename transferred from Signal
-    # example: signal-2021-06-13-203304.jpg
-    date_str = filename.name
-    if not SIGNAL_REGEX.match(date_str):
-        return None
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str[7:22], "%Y-%m-%d-%H%M%S")
-        return date_obj
-    except ValueError:
-        return None
-
-
-unk_image_REGEX = re.compile(r"image-\d{8}-\d{6}..*")
-
-
-def parse_date_unk_image_filename(filename: Path):
-    _LOGGER.debug(f"Trying Unknown Image filename parser")
-    # Extract date and time from filename transferred from ???
-    # example: image-20230409-103235.jpg
-    date_str = filename.name
-    if not unk_image_REGEX.match(date_str):
-        return None
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str[6:21], "%Y%m%d-%H%M%S")
-        return date_obj
-    except ValueError:
-        return None
-
-
-IG_REGEX = re.compile(r"IMG_\d{8}_\d{6}_\d{3}\..*")
-
-
-def parse_date_IG_filename(filename: Path):
-    _LOGGER.debug(f"Trying Instagram filename parser")
-    # Extract date and time from filename transferred from Instagram
-    # example: IMG_20220901_041339_391.jpg
-    date_str = filename.name
-    if not IG_REGEX.match(date_str):
-        return None
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str[4:19], "%Y%m%d_%H%M%S")
-        return date_obj
-    except ValueError:
-        return None
-
-VR_REGEX = re.compile(r"IMG_\d{8}_\d{6}\.vr\..*")
-
-
-def parse_date_vr_image_filename(filename: Path):
-    _LOGGER.debug(f"Trying VR Image creator filename parser")
-    # Extract date and time from filename transferred from VR Image creator
-    # example: IMG_20191209_043621.vr.jpg
-    date_str = filename.name
-    if not VR_REGEX.match(date_str):
-        return None
-    try:
-        # Parse the date string
-        date_obj = datetime.strptime(date_str[4:19], "%Y%m%d_%H%M%S")
-        return date_obj
-    except ValueError:
-        return None
-
-FILENAME_PARSERS = [
-    parse_date_iOS_filename,
-    parse_date_WA_filename,
-    parse_date_Threema_filename,
-    parse_date_Signal_filename,
-    parse_date_unk_image_filename,
-    parse_date_IG_filename,
-    parse_date_vr_image_filename,
-]
-
-
-def parse_date_from_filename(filename: Path):
-    for parser in FILENAME_PARSERS:
-        date = parser(filename)
+def parse_date_from_filename(parsers: List[Parser], filename: Path):
+    for parser in parsers:
+        date = parser.parse_date(filename)
         if date:
             return date
     return None
 
 
-def update_exif_date(image_path: Path, dry_run: bool = False, force: bool = False):
+def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = False, force: bool = False):
     # Parse date from filename (assumed to be faster than actually opening the image)
-    date_taken = parse_date_from_filename(image_path)
+    date_taken = parse_date_from_filename(parsers, image_path)
     if not date_taken:
         _LOGGER.debug(f"Could not parse date from filename: {image_path}")
         return
@@ -204,9 +131,23 @@ def update_exif_date(image_path: Path, dry_run: bool = False, force: bool = Fals
     except Exception as e:
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}")
 
+PARSER_CLASSES = {
+    "filename_regex": RegexNameParser,
+    "folder": FolderNameParser,
+}
+
+def load_config(config:str):
+    with open(config, "r") as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+    parsers = []
+    for entry in cfg:
+        parser_class = PARSER_CLASSES[entry["parser"]].from_config(entry)
+        parsers.append(parser_class)
+    return parsers
+
 
 def process_directory(
-    directory: str, verbosity: int = logging.INFO, wet_run: bool = False, force: bool = False
+    directory: str, verbosity: int = logging.INFO, config:str = "./config.yml", wet_run: bool = False, force: bool = False
 ):
     """
     Process all images in the given directory and update their EXIF date based on filename, if missing
@@ -222,6 +163,8 @@ def process_directory(
     handler.setLevel(verbosity)
     _LOGGER.setLevel(verbosity)
     _LOGGER.addHandler(handler)
+
+    parsers = load_config(config)
 
     # actual processing
     iter = Path(directory).walk()
@@ -242,7 +185,7 @@ def process_directory(
                 continue
             _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
-            update_exif_date(image_path, not wet_run, force)
+            update_exif_date(parsers, image_path, not wet_run, force)
     _LOGGER.info("Done!")
 
 

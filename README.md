@@ -4,7 +4,7 @@ Most of the time, the file name of a photo contains the date and time when the p
 
 > This script is extremely conservative. Rather than messing up your photos, it will refuse to update the EXIF date.
 
-The script boasts some hardcoded formats for the file name. If your file names don't match these formats, you can easily add your own.
+The script boasts some hardcoded formats for the file name. If your file names don't match these formats, you can easily add your own by modifying the config.yml.
 
 The default run is a dry run. To actually update the EXIF date, you need to pass the `--wet_run True` flag.
 
