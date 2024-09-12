@@ -15,6 +15,14 @@ import yaml
 
 _LOGGER = logging.getLogger(__name__)
 
+VERSION = "0.1.0"
+PROCESSED_TAG_INDEX = 0xfe69
+assert PROCESSED_TAG_INDEX not in piexif.ExifIFD.__dict__.values()
+piexif.TAGS["Exif"][PROCESSED_TAG_INDEX] = {"name": "ExifDateFromFilename", "type":piexif.TYPES.Undefined}
+PROCESSED_TAG_NON_VARIABLE = "exif_date_from_filename"
+PROCESSED_TAG = f"{PROCESSED_TAG_NON_VARIABLE}_v{VERSION}"
+
+
 class Parser:
     def parse_date(self, filename: Path):
         raise NotImplementedError()
@@ -80,7 +88,7 @@ def parse_date_from_filename(parsers: List[Parser], filename: Path):
     return None
 
 
-def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = False, force: bool = False) -> bool:
+def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = False, update: bool = False, force: bool = False) -> bool:
     # Parse date from filename (assumed to be faster than actually opening the image)
     date_taken = parse_date_from_filename(parsers, image_path)
     if not date_taken:
@@ -108,13 +116,18 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             exif_dict = {"0th": {}, "1st": {}, "Exif": {}, "GPS": {}, "Interop": {}}
 
         # Check if DateTimeOriginal tag is already set
-        if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"] or force:
+        # and was written by us
+        if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"] or (
+           exif_dict["Exif"].get(PROCESSED_TAG_INDEX, b"").decode("ascii").startswith(PROCESSED_TAG_NON_VARIABLE) and update
+        ) or force:
 
             # Set the DateTimeOriginal tag
             date_taken_fmt = date_taken.strftime("%Y:%m:%d %H:%M:%S")
             exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_taken_fmt.encode(
                 "utf-8"
             )
+            # Add processed tag
+            exif_dict["Exif"][PROCESSED_TAG_INDEX] = PROCESSED_TAG.encode("ascii")
 
             # Save the updated EXIF data (atomic, to avoid corrupting the image)
             exif_bytes = piexif.dump(exif_dict)
@@ -122,6 +135,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
                 delete=False, suffix=image_path.suffix, dir=image_path.parent
             ) as tmp:
                 img.save(tmp.name, exif=exif_bytes)
+
                 os.replace(tmp.name, image_path)
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
             return True
@@ -129,6 +143,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             _LOGGER.debug(f"EXIF date already set for {image_path}")
 
     except Exception as e:
+        raise e
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}")
     return False
 
@@ -148,14 +163,16 @@ def load_config(config:str):
 
 
 def process_directory(
-    directory: str, verbosity: int = logging.INFO, config:str = "./config.yml", wet_run: bool = False, force: bool = False
+    directory: str, verbosity: int = logging.INFO, config:str = "./config.yml", wet_run: bool = False, update: bool= False, force: bool = False
 ):
     """
     Process all images in the given directory and update their EXIF date based on filename, if missing
     :param directory: Directory containing images
     :param verbosity: Logging verbosity level
     :param wet_run: Perform the actual update (default is dry run)
-    :param force: Force update even if DateTimeOriginal tag is already set
+    :param update: Overwrite tags that were written by us
+    :param force: Force update even if DateTimeOriginal tag is already set by external software
+    :param config: Path to the config file
     """
     # cursed logging setup
     handler = logging.StreamHandler()
@@ -187,7 +204,7 @@ def process_directory(
                 continue
             _LOGGER.debug(f"Processing file: {filename}")
             image_path = dir_path / filename
-            updated = update_exif_date(parsers, image_path, not wet_run, force)
+            updated = update_exif_date(parsers, image_path, not wet_run, update, force)
             if updated:
                 updated_dirs.add(dir_path)
     _LOGGER.info("Done!")

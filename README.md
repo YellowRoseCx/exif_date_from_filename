@@ -23,13 +23,13 @@ pip install -r requirements.txt
 In order to see what changes _would_ be made, run the script with the default flags:
 
 ```bash
-python exif_from_filename.py /path/to/photos
+python exif_date_from_filename.py /path/to/photos
 ```
 
 If you're happy with the changes, run the script with the `--wet_run True` flag:
 
 ```bash
-python exif_from_filename.py /path/to/photos --wet_run True
+python exif_date_from_filename.py /path/to/photos --wet_run True
 ```
 
 ## Customization
