@@ -143,8 +143,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             _LOGGER.debug(f"EXIF date already set for {image_path}")
 
     except Exception as e:
-        raise e
-        _LOGGER.warning(f"Error processing {image_path}: {str(e)}")
+        _LOGGER.warning(f"Error processing {image_path}: {str(e)}", exc_info=e)
     return False
 
 PARSER_CLASSES = {
