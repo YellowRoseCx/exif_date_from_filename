@@ -12,6 +12,8 @@ Changes are applied atomically. If you cancel the script, no image will be broke
 
 ## Installation
 
+You need python3.12 to run this script.
+
 ```bash
 git clone https://github.com/nielstron/exif_from_filename.git
 cd exif_from_filename 
