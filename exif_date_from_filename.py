@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import logging
 import os
 import re
@@ -186,12 +185,15 @@ def process_directory(
     parsers = load_config(config)
 
     # actual processing
-    iter = Path(directory).walk()
+    # Use os.walk instead of Path.walk() for Python 3.11 compatibility
+    dir_path_obj = Path(directory)
+    walk_iter = os.walk(dir_path_obj)
     if verbosity > logging.INFO:
         # should add a progress bar if verbosity is high
-        iter = tqdm(iter)
+        walk_iter = tqdm(list(walk_iter))
     updated_dirs = set()
-    for dir_path, dir_names, file_names in iter:
+    for root, dir_names, file_names in walk_iter:
+        dir_path = Path(root)
         _LOGGER.info(f"Processing directory: {dir_path}")
         for filename in sorted(file_names):
             if Path(filename).suffix.lower() not in [
@@ -213,6 +215,8 @@ def process_directory(
         _LOGGER.info("Dumping updated directories to stdout")
         for dir in updated_dirs:
             print(dir)
+    else:
+        _LOGGER.info("No directories were updated.")
 
 
 # Usage
