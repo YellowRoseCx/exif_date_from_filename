@@ -2,10 +2,6 @@
 
 Most of the time, the file name of a photo contains the date and time when the photo was taken. This script reads the date and time from the file name and updates the EXIF date of the photo.
 
-## Requirements
-
-- Python 3.11 or higher
-- Required Python packages (see requirements.txt)
 
 > This script is extremely conservative. Rather than messing up your photos, it will refuse to update the EXIF date.
 
@@ -15,15 +11,20 @@ The default run is a dry run. To actually update the EXIF date, you need to pass
 
 Changes are applied atomically. If you cancel the script, no image will be broken. You may be left with an artifact temporary image.
 
+
 ## Installation
 
-You need python3.12 to run this script.
+
+You need
+- Python 3.11 or higher
+- Required Python packages (see requirements.txt)
+
+Then run:
 
 ```bash
 git clone https://github.com/nielstron/exif_from_filename.git
 cd exif_from_filename 
 pip install -r requirements.txt
-chmod +x exif_date_from_filename.py  # Make the script executable
 ```
 
 ## Usage
