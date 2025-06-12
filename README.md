@@ -15,10 +15,7 @@ Changes are applied atomically. If you cancel the script, no image will be broke
 ## Installation
 
 
-You need
-- Python 3.11 or higher
-- Required Python packages (see requirements.txt)
-
+You need to have Python 3.11 or higher installed and in your PATH.
 Then run:
 
 ```bash
