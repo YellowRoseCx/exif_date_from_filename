@@ -63,3 +63,7 @@ php occ memories:index --force --folder /path/to/photos
 ```
 
 Because this command can take longer, exif_from_filename will print the folders that contain actual changes at the end of the run.
+
+## Contributing
+
+Feel free to open a PR. Especially welcome are PRs to support (non-niche) filenames per Default in the config.yml
