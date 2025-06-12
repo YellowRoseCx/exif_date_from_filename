@@ -38,7 +38,7 @@ If you're happy with the changes, run the script with the `--wet_run True` flag:
 python exif_date_from_filename.py /path/to/photos --wet_run True
 ```
 
-You can also run the script directly if you've made it executable:
+You can also run the script directly:
 
 ```bash
 ./exif_date_from_filename.py /path/to/photos
