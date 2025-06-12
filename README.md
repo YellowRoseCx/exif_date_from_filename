@@ -66,4 +66,4 @@ Because this command can take longer, exif_from_filename will print the folders 
 
 ## Contributing
 
-Feel free to open a PR. Especially welcome are PRs to support (non-niche) filenames per Default in the config.yml
+Feel free to open a Pull Request. Especially welcome are PRs to support (non-niche) filenames per default in the `config.yml`. For an example PR refer to https://github.com/nielstron/exif_date_from_filename/pull/3 
