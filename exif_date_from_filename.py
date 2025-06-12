@@ -121,6 +121,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
         if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"] or (
            exif_dict["Exif"].get(PROCESSED_TAG_INDEX, b"").decode("ascii").startswith(PROCESSED_TAG_NON_VARIABLE) and update
         ) or force:
+            _LOGGER.debug(f"Writing EXIF date")
 
             # Set the DateTimeOriginal tag
             date_taken_fmt = date_taken.strftime("%Y:%m:%d %H:%M:%S")
@@ -136,8 +137,33 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
                 delete=False, suffix=image_path.suffix, dir=image_path.parent
             ) as tmp:
                 img.save(tmp.name, exif=exif_bytes)
-
-                os.replace(tmp.name, image_path)
+            
+            # Close the image before replacing the file
+            img.close()
+            
+            # On Windows, file handles might not be released immediately
+            # Try multiple times with increasing delays
+            max_retries = 3
+            for retry in range(max_retries):
+                try:
+                    os.replace(tmp.name, image_path)
+                    break  # Success, exit the retry loop
+                except PermissionError as e:
+                    if retry < max_retries - 1:
+                        # Exponential backoff: 0.1s, 0.2s, 0.4s
+                        import time
+                        time.sleep(0.1 * (2 ** retry))
+                        continue
+                    else:
+                        # All retries failed
+                        _LOGGER.warning(f"Failed to replace file after {max_retries} retries: {str(e)}")
+                except Exception as e:
+                    _LOGGER.warning(f"Unexpected error replacing file: {str(e)}")
+                finally:
+                    try:
+                        os.remove(tmp.name)  # Clean up the temporary file
+                    except Exception:
+                        pass  # Ignore errors when cleaning up
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
             return True
         else:
