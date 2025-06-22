@@ -48,15 +48,22 @@ class RegexNameParser(Parser):
         if not match:
             return None
         groupdict = match.groupdict()
+        if groupdict.get("microsecond") is not None and groupdict.get("millisecond") is not None:
+            _LOGGER.warning(f"Both microsecond and millisecond groups found in regex for {self.name}. Using microsecond group.")
         try:
             # Parse the date string
             date_obj = datetime(
-                int(groupdict["year"]),
-                int(groupdict["month"]),
-                int(groupdict["day"]),
-                int(groupdict.get("hour", 0)),
-                int(groupdict.get("minute", 0)),
-                int(groupdict.get("second", 0)),
+                year=int(groupdict["year"]),
+                month=int(groupdict["month"]),
+                day=int(groupdict["day"]),
+                hour=int(groupdict.get("hour") or 0),
+                minute=int(groupdict.get("minute") or 0),
+                second=int(groupdict.get("second") or 0),
+                microsecond=(
+                    int(groupdict.get("microsecond") or 0)
+                    if groupdict.get("microsecond") is not None else
+                    int(groupdict.get("millisecond") or 0)*1000
+                ),
             )
             return date_obj
         except ValueError:

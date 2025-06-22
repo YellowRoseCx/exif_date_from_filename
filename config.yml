@@ -5,31 +5,31 @@
 - parser: filename_regex
   name: WhatsApp
   # example: IMG-20151101-WA0001
-  regex: IMG[-_](?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})[-_]WA(?P<minute>\d{2})(?P<second>\d{2})
+  regex: IMG[-_](?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})[-_]WA(?P<microsecond>\d{4,})
 - parser: filename_regex
   name: Threema
   # example: threema-20220412-084636799
-  regex: threema-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
+  regex: threema-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})(?P<millisecond>\d{3})
 - parser: filename_regex
   name: Signal
   # example: signal-2021-06-13-203304
-  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*
+  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})
 - parser: filename_regex
   name: Signal (alt)
-  # example: signal-2022-06-21-10-01-35-997-29
-  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2}).*
+  # example: signal-2021-06-13-20-33-04-997
+  regex: signal-(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})-(?P<hour>\d{2})-(?P<minute>\d{2})-(?P<second>\d{2})-(?P<millisecond>\d{3})
 - parser: filename_regex
   name: unk
-  regex: image-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})
+  regex: image-(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})-(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})((?P<microsecond>\d{6})|(?P<millisecond>\d{3}))?
   # example: image-20230409-103235
 - parser: filename_regex
   name: Instagram
   # example: IMG_20220901_041339_391
-  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})_\d{3}
+  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})(_(?P<millisecond>\d{3}))?
 - parser: filename_regex
   name: VR Image creator
   # example: IMG_20191209_043621.vr
-  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.vr.*
+  regex: IMG_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.vr\..*
 - parser: filename_regex
   name: Screenshot Android
   # example: Screenshot_20220926-211023.png
