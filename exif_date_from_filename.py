@@ -16,7 +16,7 @@ import yaml
 
 _LOGGER = logging.getLogger(__name__)
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 PROCESSED_TAG_INDEX = 0xfe69
 assert PROCESSED_TAG_INDEX not in piexif.ExifIFD.__dict__.values()
 piexif.TAGS["Exif"][PROCESSED_TAG_INDEX] = {"name": "ExifDateFromFilename", "type":piexif.TYPES.Undefined}
