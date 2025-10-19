@@ -8,7 +8,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import List
 
-from PIL import Image
 import piexif
 import fire
 from tqdm import tqdm
@@ -105,23 +104,19 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
     if dry_run:
         _LOGGER.info(f"Would update EXIF date for {image_path} to {date_taken}")
         return False
-    # Open the image
-    try:
-        img = Image.open(image_path)
-    except Exception as e:
-        _LOGGER.debug(f"Error opening {image_path}: {str(e)}")
-        if "cannot identify image file" in str(e):
-            _LOGGER.debug(f"Skipping non-image file: {image_path}")
-        else:
-            _LOGGER.warning(f"Error opening {image_path}: {str(e)}")
-        return False
-    try:
 
-        # Check if EXIF data exists
-        if "exif" in img.info:
-            exif_dict = piexif.load(img.info["exif"])
-        else:
+    try:
+        # Load EXIF data directly from the image file 
+        try:
+            exif_dict = piexif.load(str(image_path))
+        except piexif.InvalidImageDataError:
+            # handle cases where the file is not a valid JPEG/TIFF or has no EXIF marker
+            _LOGGER.debug(f"No existing EXIF data in {image_path}. Creating new EXIF data.")
             exif_dict = {"0th": {}, "1st": {}, "Exif": {}, "GPS": {}, "Interop": {}}
+        except Exception as e:
+            # Catch other potential piexif errors
+            _LOGGER.warning(f"Error loading EXIF from {image_path}: {str(e)}")
+            return False
 
         # Check if DateTimeOriginal tag is already set
         # and was written by us
@@ -138,39 +133,12 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             # Add processed tag
             exif_dict["Exif"][PROCESSED_TAG_INDEX] = PROCESSED_TAG.encode("ascii")
 
-            # Save the updated EXIF data (atomic, to avoid corrupting the image)
+            # Convert the EXIF dictionary to bytes
             exif_bytes = piexif.dump(exif_dict)
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=image_path.suffix, dir=image_path.parent
-            ) as tmp:
-                img.save(tmp.name, exif=exif_bytes)
             
-            # Close the image before replacing the file
-            img.close()
+            # Insert the new EXIF data into the image file in-place
+            piexif.insert(exif_bytes, str(image_path))
             
-            # On Windows, file handles might not be released immediately
-            # Try multiple times with increasing delays
-            max_retries = 3
-            for retry in range(max_retries):
-                try:
-                    os.replace(tmp.name, image_path)
-                    break  # Success, exit the retry loop
-                except PermissionError as e:
-                    if retry < max_retries - 1:
-                        # Exponential backoff: 0.1s, 0.2s, 0.4s
-                        import time
-                        time.sleep(0.1 * (2 ** retry))
-                        continue
-                    else:
-                        # All retries failed
-                        _LOGGER.warning(f"Failed to replace file after {max_retries} retries: {str(e)}")
-                except Exception as e:
-                    _LOGGER.warning(f"Unexpected error replacing file: {str(e)}")
-                finally:
-                    try:
-                        os.remove(tmp.name)  # Clean up the temporary file
-                    except Exception:
-                        pass  # Ignore errors when cleaning up
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
             return True
         else:
@@ -178,6 +146,7 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
 
     except Exception as e:
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}", exc_info=e)
+    
     return False
 
 PARSER_CLASSES = {
