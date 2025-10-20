@@ -104,26 +104,24 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
     if dry_run:
         _LOGGER.info(f"Would update EXIF date for {image_path} to {date_taken}")
         return False
-
     try:
-        # Load EXIF data directly from the image file 
+        # Read the entire image file into memory as raw bytes.
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+
+        # Load the EXIF data from the in-memory bytes.
         try:
-            exif_dict = piexif.load(str(image_path))
+            exif_dict = piexif.load(image_data)
         except piexif.InvalidImageDataError:
-            # handle cases where the file is not a valid JPEG/TIFF or has no EXIF marker
             _LOGGER.debug(f"No existing EXIF data in {image_path}. Creating new EXIF data.")
             exif_dict = {"0th": {}, "1st": {}, "Exif": {}, "GPS": {}, "Interop": {}}
-        except Exception as e:
-            # Catch other potential piexif errors
-            _LOGGER.warning(f"Error loading EXIF from {image_path}: {str(e)}")
-            return False
 
         # Check if DateTimeOriginal tag is already set
         # and was written by us
         if piexif.ExifIFD.DateTimeOriginal not in exif_dict["Exif"] or (
            exif_dict["Exif"].get(PROCESSED_TAG_INDEX, b"").decode("ascii").startswith(PROCESSED_TAG_NON_VARIABLE) and update
         ) or force:
-            _LOGGER.debug(f"Writing EXIF date")
+            _LOGGER.debug(f"Writing EXIF date for {image_path}")
 
             # Set the DateTimeOriginal tag
             date_taken_fmt = date_taken.strftime("%Y:%m:%d %H:%M:%S")
@@ -133,12 +131,40 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
             # Add processed tag
             exif_dict["Exif"][PROCESSED_TAG_INDEX] = PROCESSED_TAG.encode("ascii")
 
-            # Convert the EXIF dictionary to bytes
+            # Save the updated EXIF data (atomic, to avoid corrupting the image)
             exif_bytes = piexif.dump(exif_dict)
+            # Write the new data to a temp file (to ensure atomicity)
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=image_path.suffix, dir=image_path.parent
+            ) as tmp:
+                # Create the new image file data by inserting the new EXIF into the original data
+                piexif.insert(exif_bytes, image_data, tmp.name)
             
-            # Insert the new EXIF data into the image file in-place
-            piexif.insert(exif_bytes, str(image_path))
+            # Atomically replace the original file with the new one.
             
+            # On Windows, file handles might not be released immediately
+            # Try multiple times with increasing delays
+            max_retries = 3
+            for retry in range(max_retries):
+                try:
+                    os.replace(tmp.name, image_path)
+                    break  # Success, exit the retry loop
+                except PermissionError as e:
+                    if retry < max_retries - 1:
+                        # Exponential backoff: 0.1s, 0.2s, 0.4s
+                        import time
+                        time.sleep(0.1 * (2 ** retry))
+                        continue
+                    else:
+                        # All retries failed
+                        _LOGGER.warning(f"Failed to replace file after {max_retries} retries: {str(e)}")
+                except Exception as e:
+                    _LOGGER.warning(f"Unexpected error replacing file: {str(e)}")
+                finally:
+                    try:
+                        os.remove(tmp.name)  # Clean up the temporary file
+                    except Exception:
+                        pass  # Ignore errors when cleaning up
             _LOGGER.info(f"Updated EXIF date for {image_path} to {date_taken}")
             return True
         else:
@@ -146,7 +172,6 @@ def update_exif_date(parsers: List[Parser], image_path: Path, dry_run: bool = Fa
 
     except Exception as e:
         _LOGGER.warning(f"Error processing {image_path}: {str(e)}", exc_info=e)
-    
     return False
 
 PARSER_CLASSES = {
@@ -176,7 +201,7 @@ def process_directory(
     :param force: Force update even if DateTimeOriginal tag is already set by external software
     :param config: Path to the config file
     """
-    # cursed logging setup
+    # cursed logging setupa
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
