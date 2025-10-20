@@ -201,7 +201,7 @@ def process_directory(
     :param force: Force update even if DateTimeOriginal tag is already set by external software
     :param config: Path to the config file
     """
-    # cursed logging setupa
+    # cursed logging setup
     handler = logging.StreamHandler()
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
